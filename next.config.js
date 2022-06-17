@@ -2,12 +2,6 @@
 module.exports = {
   reactStrictMode: true,
   assetPrefix: './',
-  withFonts({
-    enableSvg: true,
-    webpack(config, options) {
-      return config;
-    },
-  });
   webpack: function (config, options) {
     if (!options.isServer) {
       config.resolve.fallback.events = require.resolve('events/');
