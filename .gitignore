@@ -1,11 +1,4 @@
-# System and IDE files
-Thumbs.db
+.next
 .DS_Store
-.vscode
-
-
-# Vendors
-node_modules/
-
-# Build
-dist
+node_modules
+out
