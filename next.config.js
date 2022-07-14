@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
-module.exports = {
+const nextConfig = {
   reactStrictMode: true,
-  assetPrefix: './',
+  swcMinify: true,
   webpack: function (config, options) {
     if (!options.isServer) {
       config.resolve.fallback.events = require.resolve('events/');
@@ -11,3 +11,5 @@ module.exports = {
     return config;
   },
 }
+
+module.exports = nextConfig

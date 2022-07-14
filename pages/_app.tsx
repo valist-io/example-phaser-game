@@ -1,35 +1,38 @@
-import '../styles/globals.css'
-import type { AppProps } from 'next/app'
-import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
-import { chain, configureChains, createClient, WagmiConfig } from 'wagmi'
-import { connectorsForWallets, RainbowKitProvider, wallet } from '@rainbow-me/rainbowkit'
+import '../styles/globals.css';
+import type { AppProps } from 'next/app';
+import '@rainbow-me/rainbowkit/styles.css';
+import {
+  getDefaultWallets,
+  RainbowKitProvider,
+} from '@rainbow-me/rainbowkit';
+import {
+  chain,
+  configureChains,
+  createClient,
+  WagmiConfig,
+} from 'wagmi';
+import { alchemyProvider } from 'wagmi/providers/alchemy';
+import { publicProvider } from 'wagmi/providers/public';
 
-function App({ Component, pageProps }: AppProps) {
-  const defaultProvider = jsonRpcProvider({
-    rpc: () => ({
-      http: 'https://polygon-rpc.com',
-    }),
-  });
+const { chains, provider } = configureChains(
+  [chain.polygon],
+  [
+    publicProvider()
+  ]
+);
 
-  const { chains, provider } = configureChains([chain.polygon], [defaultProvider]);
-  const connectors = connectorsForWallets([
-    {
-      groupName: 'Popular',
-      wallets: [
-        wallet.coinbase({ appName: 'Valist', chains }),
-        wallet.metaMask({ chains }),
-      ],
-    },
-    {
-      groupName: 'Mobile',
-      wallets: [
-        wallet.rainbow({ chains }),
-        wallet.walletConnect({ chains }),
-      ],
-    },
-  ]);
-  const wagmiClient = createClient({ autoConnect: true, connectors, provider });
+const { connectors } = getDefaultWallets({
+  appName: 'Kitty Cat Fishing quest',
+  chains
+});
 
+const wagmiClient = createClient({
+  autoConnect: true,
+  connectors,
+  provider
+})
+
+function MyApp({ Component, pageProps }: AppProps) {
   return (
     <WagmiConfig client={wagmiClient}>
       <RainbowKitProvider chains={chains}>
@@ -39,4 +42,4 @@ function App({ Component, pageProps }: AppProps) {
   )
 }
 
-export default App;
+export default MyApp;

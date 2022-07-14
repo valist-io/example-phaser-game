@@ -1,48 +1,57 @@
-import Head from 'next/head'
-import { useEffect } from 'react';
-import dynamic from 'next/dynamic'
+import type { NextPage } from 'next';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useAccount } from 'wagmi';
-import { createReadOnly, generateID } from '@valist/sdk';
+import dynamic from 'next/dynamic';
 import { ethers } from 'ethers';
+import { createReadOnly, generateID } from '@valist/sdk';
+import { useEffect, useState } from 'react';
+import { useAccount } from 'wagmi';
+import styles from '../styles/Home.module.css'
 
-const CreateGame = dynamic(() => import('components/CreateGame'),
+const CreateGame = dynamic(() => import('../components/CreateGame'),
   { ssr: false }
 );
 
-const Home = () => {
-  const { data, isError, isLoading } = useAccount();
+const Home: NextPage = () => {
+  const account = useAccount();
+  const [showMenu, setShowMenu] = useState<boolean>(true);
+  const [balance, setBalance] = useState<number>(0);
   const provider = new ethers.providers.JsonRpcProvider('https://polygon-rpc.com');
   const valist = createReadOnly(provider, { chainId: 137 });
-
-  useEffect(() => { 
-    if (data?.address) console.log('address', data?.address); 
-  }, [data?.address]);
+  const noToken = balance === 0;
 
   useEffect(() => {
-    (async () => {
-      if (data?.address) {
-        const accountID = generateID('137', 'acme-co');
-        const projectID = generateID(accountID, 'token-gated-unity-3');
-        const productBalance = await valist.getProductBalance(data?.address, projectID);
-        console.log('Balance', Number(productBalance._hex));
-      }
-    })();
-  }, [valist, data?.address]);
+    if (account?.address) {
+      const accountID = generateID('137', 'acme-co');
+      const projectID = generateID(accountID, 'token-gated-unity-3');
+      valist.getProductBalance(account?.address, projectID).then((_balance) => {
+        setBalance(Number(_balance.toHexString()))
+      });
+    }
+  }, [valist, account?.address]);
 
+  const playFull = () => {
+    if (!noToken) setShowMenu(false);
+  }
+
+  const playGuest = () => {
+    setShowMenu(false);
+  }
+  
   return (
     <div>
-      <Head>
-        <title>Web3 Game</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      <div style={{position: 'fixed', top: 20, right: 20}}>
+      {showMenu && <div className={styles.menu}>
+        <h1>Welcome to the Web3 Game!</h1>
+        <div>
+          <button onClick={playFull} style={{ marginRight: 10 }}>Play {noToken ? '(No token found)' : ''}</button>
+          <button onClick={playGuest}>Play as Guest</button>
+        </div>
+      </div>}
+      <div style={{position: 'fixed', top: 20, right: 20, zIndex: 10}}>
         <ConnectButton />
       </div>
-      <div id="game"></div>
       <CreateGame />
     </div>
-  );
-};
+  )
+}
 
 export default Home;
