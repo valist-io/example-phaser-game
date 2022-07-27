@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  assetPrefix: "./",
   reactStrictMode: true,
-  swcMinify: true,
   webpack: function (config, options) {
     if (!options.isServer) {
       config.resolve.fallback.events = require.resolve('events/');
