@@ -1,64 +1,58 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import type { NextPage } from 'next';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import dynamic from 'next/dynamic';
-import { ethers } from 'ethers';
-import { createReadOnly, generateID, ProjectMeta } from '@valist/sdk';
-import { useEffect, useState } from 'react';
-import { useAccount } from 'wagmi';
 import styles from '../styles/Home.module.css'
 
-const CreateGame = dynamic(() => import('../components/CreateGame'),
-  { ssr: false }
-);
+import type { NextPage } from 'next';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { createReadOnly, generateID } from '@valist/sdk';
+import { useEffect, useState } from 'react';
+import { useAccount, useProvider } from 'wagmi';
 
 const Home: NextPage = () => {
-  const account = useAccount();
-  const [showMenu, setShowMenu] = useState<boolean>(true);
+  const provider = useProvider()
+  const { address } = useAccount();
+
+  const [isPlaying, setPlaying] = useState<boolean>(false);
   const [balance, setBalance] = useState<number>(0);
-  const [projectMeta, setProjectMeta] = useState<ProjectMeta>({});
-  const provider = new ethers.providers.JsonRpcProvider('https://polygon-rpc.com');
-  const valist = createReadOnly(provider, { chainId: 137 });
-  const noToken = balance === 0;
+
+  // generate the project ID
+  const accountID = generateID('137', 'webgame');
+  const projectID = generateID(accountID, 'game');
+
+  // create valist sdk client
+  const valist = createReadOnly(provider as any, { chainId: 137 });
 
   useEffect(() => {
-    if (account?.address) {
-      const accountID = generateID('137', 'webgame');
-      const projectID = generateID(accountID, 'game');
+    // reset the balance when address changes
+    setBalance(0);
 
-      valist.getProductBalance(account?.address, projectID).then((_balance) => {
-        console.log('_balance', balance);
-        setBalance(Number(_balance.toHexString()))
-      });
-
-      valist.getProjectMeta(projectID).then((meta: ProjectMeta) => {
-        setProjectMeta(meta);
-      });
+    if (address) {
+      // check the current user's product balance
+      valist.getProductBalance(address, projectID).then(val => setBalance(val.toNumber()));
     }
-  }, [account?.address]);
+  }, [address]);
 
-  const playFull = () => {
-    if (!noToken) setShowMenu(false);
-  }
+  const play = async () => {
+    setPlaying(true);
+    // dynamically load the game
+    import('../utils/game').then(game => game.start());  
+  };
 
-  const playGuest = () => {
-    setShowMenu(false);
-  }
-  
   return (
     <div>
-      {showMenu && <div className={styles.menu}>
-        <h1>Welcome to the Web3 Game!</h1>
-        <div>
-          <button onClick={playFull} style={{ marginRight: 10 }}>Play {noToken ? '(No token found)' : ''}</button>
-        </div>
-      </div>}
       <div style={{position: 'fixed', top: 20, right: 20, zIndex: 10}}>
         <ConnectButton />
       </div>
-      {projectMeta?.image && <CreateGame skin={projectMeta.image} />}
+      {!isPlaying && 
+        <div className={styles.menu}>
+          <h1>Welcome to the Web3 Game!</h1>
+          <div>
+            <button onClick={play} style={{ marginRight: 10 }} disabled={balance <= 0}>
+              Play { balance <= 0 ? '(No token found)' : '' }
+            </button>
+          </div>
+        </div>
+      }
     </div>
-  )
+  );
 }
 
 export default Home;
